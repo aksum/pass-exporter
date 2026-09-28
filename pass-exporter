@@ -1,0 +1,307 @@
+#!/usr/bin/env bash
+# pass-exporter — export a pass (password-store) to an editable JSON file that
+# import backends (Proton Pass, 1Password, ...) consume later.
+#
+# SECURITY: never enable `set -x` in this script; it would leak secrets.
+
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+readonly VERSION="1.0.0"
+readonly FORMAT="pass-exporter/v1"
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+readonly SCRIPT_DIR
+readonly LIB_DIR="$SCRIPT_DIR/lib"
+
+# shellcheck source=lib/log.sh
+source "$LIB_DIR/log.sh"
+# shellcheck source=lib/common.sh
+source "$LIB_DIR/common.sh"
+# shellcheck source=lib/store.sh
+source "$LIB_DIR/store.sh"
+# shellcheck source=lib/import.sh
+source "$LIB_DIR/import.sh"
+
+# Defaults (overridable by flags).
+STORE="./.password-store.bak"
+OUTPUT="./export/pass-export.json"
+VAULT=""  # import target vault; lib/import.sh defaults it to "pass-exporter"
+BACKEND=""
+APPLY=false
+ASSUME_YES=false
+DELAY=0
+FILTER=""
+INCLUDE_RAW=false
+FORCE=false
+DRY_RUN=false
+KEEP_GOING=false
+
+usage() {
+    cat <<EOF
+pass-exporter $VERSION — export a pass store to an editable JSON file ($FORMAT)
+
+Usage:
+  pass-exporter export   [options]   decrypt, classify and write the export file
+  pass-exporter summary  [-o FILE]   counts per type and entries flagged for review
+  pass-exporter validate [-o FILE]   check the (hand-edited) export file
+  pass-exporter import   --backend NAME [options]
+                                     import the export file (dry run unless --apply)
+
+Options:
+  -s, --store DIR      pass store to read            (default: $STORE)
+  -o, --output FILE    export file                   (default: $OUTPUT)
+      --filter GLOB    only entries whose path matches GLOB, e.g. 'Azure/*'
+      --include-raw    also store the full decrypted text in "raw"
+      --dry-run        decrypt + classify, print a table, write nothing
+      --keep-going     write the file even if some entries fail to decrypt
+  -f, --force          overwrite an existing export file
+
+Import options:
+  -b, --backend NAME   import backend: proton
+      --vault NAME     vault to import into (default: pass-exporter; 'Personal' is refused)
+      --filter GLOB    only import entries whose path matches GLOB
+      --apply          really create items (default is a dry run)
+  -y, --yes            do not ask for confirmation with --apply
+      --delay SECONDS  pause between items (API rate limits)      (default: 0)
+
+Common:
+  -v, --verbose        debug output (never prints secret values)
+  -q, --quiet          warnings and errors only
+  -h, --help           show this help
+
+Environment:
+  LOG_LEVEL=error|warn|info|debug   NO_COLOR=1   GNUPGHOME
+EOF
+}
+
+parse_args() {
+    while (( $# > 0 )); do
+        case "$1" in
+            -s|--store)    STORE="${2:?--store needs a value}"; shift ;;
+            -o|--output)   OUTPUT="${2:?--output needs a value}"; shift ;;
+            --vault)       VAULT="${2:?--vault needs a value}"; shift ;;
+            -b|--backend)  BACKEND="${2:?--backend needs a value}"; shift ;;
+            --apply)       APPLY=true ;;
+            -y|--yes)      ASSUME_YES=true ;;
+            --delay)       DELAY="${2:?--delay needs a value}"; shift
+                           [[ "$DELAY" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--delay must be a number" ;;
+            --filter)      FILTER="${2:?--filter needs a value}"; shift ;;
+            --include-raw) INCLUDE_RAW=true ;;
+            --dry-run)     DRY_RUN=true ;;
+            --keep-going)  KEEP_GOING=true ;;
+            -f|--force)    FORCE=true ;;
+            -v|--verbose)  LOG_LEVEL=debug ;;
+            -q|--quiet)    LOG_LEVEL=warn ;;
+            -h|--help)     usage; exit 0 ;;
+            *)             usage >&2; die "unknown option: $1" ;;
+        esac
+        shift
+    done
+    STORE="${STORE%/}"
+}
+
+# Warn when a file holding secrets is readable by anyone but the owner.
+check_private_file() {
+    local f="$1" mode
+    mode="$(stat -c %a -- "$f")"
+    if [[ "$mode" != 600 && "$mode" != 400 ]]; then
+        log_warn "$f has mode $mode; it contains cleartext secrets — run: chmod 600 '$f'"
+    fi
+}
+
+prepare_output_dir() {
+    local dir mode
+    dir="$(dirname -- "$OUTPUT")"
+    if [[ ! -d "$dir" ]]; then
+        mkdir -p -- "$dir"
+        chmod 700 -- "$dir"
+        log_debug "created output dir $dir (0700)"
+    fi
+    mode="$(stat -c %a -- "$dir")"
+    if [[ "$dir" != . && "$mode" != 700 ]]; then
+        chmod 700 -- "$dir"
+        log_info "tightened permissions of $dir from $mode to 700"
+    fi
+    if [[ -e "$OUTPUT" && "$FORCE" != true ]]; then
+        die "$OUTPUT already exists (use --force to overwrite)"
+    fi
+}
+
+# export_entry ENTRY TMPDIR NDJSON — decrypt, parse, classify one entry.
+export_entry() {
+    local entry="$1" tmp="$2" ndjson="$3"
+    local plain="$tmp/entry" content enc id meta m_type m_rule m_conf m_review m_fields
+
+    store_decrypt_to "$STORE" "$entry" "$plain" || return 1
+
+    if is_utf8_text "$plain"; then
+        enc=utf8
+        content="$plain"
+    else
+        enc=base64
+        content="$tmp/entry.b64"
+        base64 -w0 -- "$plain" >"$content"
+        log_warn "$entry: binary or non-UTF-8 content, stored base64-encoded"
+    fi
+
+    id="$(printf '%s' "$entry" | sha256sum | cut -c1-12)"
+
+    jq -c -n -L "$LIB_DIR" \
+        --rawfile content "$content" \
+        --arg path "$entry" --arg id "$id" --arg enc "$enc" \
+        --argjson raw "$INCLUDE_RAW" \
+        'include "classify"; build_entry($content; $path; $id; $enc; $raw)' \
+        >>"$ndjson" || { secure_rm "$plain" "$tmp/entry.b64"; return 1; }
+
+    secure_rm "$plain" "$tmp/entry.b64"
+
+    # Metadata only: type, rule, which standard fields are set and a count of
+    # extra fields. Field names are NOT logged: they come from the secret
+    # content itself (e.g. "word word: ..." lines of a seed phrase).
+    meta="$(tail -n1 -- "$ndjson" | jq -r '
+        [.type, .classification.rule, .classification.confidence,
+         (if .classification.review then "review" else "-" end),
+         ([ (if .username != "" then "username" else empty end),
+            (if .email != "" then "email" else empty end),
+            (if .password != "" then "password" else empty end),
+            (if .totp != "" then "totp" else empty end),
+            (if (.urls | length) > 0 then "urls(\(.urls | length))" else empty end),
+            (if (.fields | length) > 0 then "fields(\(.fields | length))" else empty end)
+         ] | join(",") | if . == "" then "-" else . end)
+        ] | @tsv')"
+    IFS=$'\t' read -r m_type m_rule m_conf m_review m_fields <<<"$meta"
+    log_debug "$entry -> $m_type (rule=$m_rule confidence=$m_conf $m_review) fields=$m_fields"
+}
+
+cmd_export() {
+    require_cmds gpg jq find sort shred mktemp iconv sha256sum base64 stat
+    log_info "pass-exporter $VERSION: exporting $STORE"
+    store_preflight "$STORE"
+
+    local gpg_id tmp ndjson entry total=0 failed=0
+    gpg_id="$(store_first_gpg_id "$STORE")"
+    GPG_TTY="$(tty 2>/dev/null || true)"
+    export GPG_TTY
+
+    make_secure_tmpdir
+    tmp="$SECURE_TMPDIR"
+
+    if [[ "$DRY_RUN" == true ]]; then
+        ndjson="$tmp/entries.ndjson"
+    else
+        prepare_output_dir
+        ndjson="$(mktemp "$(dirname -- "$OUTPUT")/.pass-export.XXXXXXXX.tmp")"
+        register_cleanup_file "$ndjson"
+    fi
+    : >"$ndjson"
+    chmod 600 "$ndjson"
+
+    while IFS= read -r -d '' entry; do
+        total=$((total + 1))
+        if ! export_entry "$entry" "$tmp" "$ndjson"; then
+            failed=$((failed + 1))
+        fi
+    done < <(store_list_entries "$STORE" "$FILTER")
+
+    # shellcheck disable=SC2016 # literal quotes around the glob
+    (( total > 0 )) || die "no entries found in $STORE${FILTER:+ matching '$FILTER'}"
+    log_info "processed $total entries ($failed failed)"
+
+    if (( failed > 0 )) && [[ "$KEEP_GOING" != true ]]; then
+        die "$failed entries failed to decrypt; nothing written (use --keep-going to write anyway)"
+    fi
+
+    if [[ "$DRY_RUN" == true ]]; then
+        jq -r -s '
+            (["PATH", "TYPE", "RULE", "CONFIDENCE", "REVIEW"] | @tsv),
+            (.[] | [.source_path, .type, .classification.rule, .classification.confidence,
+                    (if .classification.review then "yes" else "-" end)] | @tsv)' "$ndjson" \
+            | column -t -s $'\t'
+        print_summary_from "$ndjson" ndjson
+        log_info "dry run: nothing written"
+        return 0
+    fi
+
+    local out_tmp
+    out_tmp="$(mktemp "$(dirname -- "$OUTPUT")/.pass-export.XXXXXXXX.json")"
+    register_cleanup_file "$out_tmp"
+    jq -n \
+        --slurpfile entries "$ndjson" \
+        --arg format "$FORMAT" \
+        --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg store "$STORE" --arg gpg_id "$gpg_id" \
+        '{format: $format, exported_at: $now,
+          source: {store: $store, gpg_id: $gpg_id, count: ($entries | length)},
+          entries: $entries}' >"$out_tmp"
+    chmod 600 "$out_tmp"
+    mv -f -- "$out_tmp" "$OUTPUT"
+    check_private_file "$OUTPUT"
+
+    print_summary_from "$OUTPUT" export
+    log_info "wrote $OUTPUT"
+    log_warn "$OUTPUT contains CLEARTEXT secrets. Review/edit it, import it, then delete it: shred -u '$OUTPUT'"
+}
+
+# print_summary_from FILE export|ndjson
+print_summary_from() {
+    local file="$1" kind="$2" filter
+    # shellcheck disable=SC2016 # jq program, not shell
+    filter='
+        (if $kind == "export" then .entries else . end) as $e
+        | "entries: \($e | length)  skipped: \([$e[] | select(.skip)] | length)  review: \([$e[] | select(.classification.review)] | length)",
+          ($e | group_by(.type) | map("  \(.[0].type): \(length)") | .[])'
+    if [[ "$kind" == ndjson ]]; then
+        jq -r -s --arg kind "$kind" "$filter" "$file" | while IFS= read -r l; do log_info "$l"; done
+    else
+        jq -r --arg kind "$kind" "$filter" "$file" | while IFS= read -r l; do log_info "$l"; done
+    fi
+}
+
+load_export_file() {
+    require_cmds jq stat
+    [[ -f "$OUTPUT" ]] || die "export file not found: $OUTPUT"
+    check_private_file "$OUTPUT"
+    jq -e . "$OUTPUT" >/dev/null 2>&1 || die "$OUTPUT is not valid JSON"
+}
+
+cmd_summary() {
+    load_export_file
+    print_summary_from "$OUTPUT" export
+    local review
+    review="$(jq -r '.entries[] | select(.classification.review and (.skip | not))
+        | [.source_path, .type, .classification.rule] | @tsv' "$OUTPUT")"
+    if [[ -n "$review" ]]; then
+        log_info "entries flagged for review:"
+        printf 'PATH\tTYPE\tRULE\n%s\n' "$review" | column -t -s $'\t'
+    fi
+}
+
+cmd_validate() {
+    load_export_file
+    local errors
+    errors="$(jq -r -L "$LIB_DIR" 'include "validate"; validate[]' "$OUTPUT")"
+    if [[ -n "$errors" ]]; then
+        while IFS= read -r e; do log_error "$e"; done <<<"$errors"
+        die "$OUTPUT is invalid ($(wc -l <<<"$errors") problems)"
+    fi
+    log_info "$OUTPUT is valid ($(jq '.entries | length' "$OUTPUT") entries)"
+}
+
+main() {
+    harden
+    require_bash
+    install_traps
+
+    local cmd="${1:-}"
+    case "$cmd" in
+        export|summary|validate|import) shift ;;
+        -h|--help|help|"") usage; exit 0 ;;
+        *) usage >&2; die "unknown command: $cmd" ;;
+    esac
+    parse_args "$@"
+    log_debug "store=$STORE output=$OUTPUT vault=${VAULT:-<default>} filter=${FILTER:-<none>}"
+
+    "cmd_$cmd"
+}
+
+main "$@"

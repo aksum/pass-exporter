@@ -1,0 +1,3 @@
+AKIAABCDEFGHIJKLMNOP
+secret: fake-aws-secret
+region: eu-west-1

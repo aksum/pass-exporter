@@ -1,0 +1,4 @@
+gh-fake-Pa55
+url: https://github.com
+otpauth://totp/GitHub:octocat?secret=JBSWY3DPEHPK3PXP
+recovery: abcd-efgh

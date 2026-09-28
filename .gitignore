@@ -1,0 +1,8 @@
+# Exports contain CLEARTEXT secrets — never commit them.
+export/
+*.json
+!tests/expected.json
+.pass-export.*
+
+# The pass store backup itself.
+.password-store.bak/

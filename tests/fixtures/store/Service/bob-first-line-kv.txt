@@ -1,0 +1,5 @@
+user: bob
+password: fake-pw123
+url: https://example.com
+https://login.example.com
+some free text

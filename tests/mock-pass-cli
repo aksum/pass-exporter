@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Minimal stand-in for Proton's pass-cli, used by tests/run.sh.
+# State lives in $MOCK_PASS_DIR: vaults.json, items/<share_id>/<n>.json, argv.log
+
+set -euo pipefail
+dir="${MOCK_PASS_DIR:?}"
+mkdir -p "$dir/items"
+[[ -f "$dir/vaults.json" ]] || echo '{"vaults":[]}' >"$dir/vaults.json"
+printf '%s\n' "$*" >>"$dir/argv.log"
+
+opt() { # opt NAME ARGS... -> value following --NAME
+    local name="$1"; shift
+    while (( $# > 1 )); do [[ "$1" == "--$name" ]] && { printf '%s' "$2"; return; }; shift; done
+}
+
+case "$1 ${2:-}" in
+    "info ")
+        echo "- Username: mock-user" ;;
+    "vault list")
+        cat "$dir/vaults.json" ;;
+    "vault create")
+        name="$(opt name "$@")"
+        jq --arg n "$name" '.vaults += [{name: $n, vault_id: "vid-\($n)", share_id: "sid-\($n)"}]' \
+            "$dir/vaults.json" >"$dir/v.tmp" && mv "$dir/v.tmp" "$dir/vaults.json"
+        echo "sid-$name" ;;
+    "item list")
+        sid="$(opt share-id "$@")"
+        mkdir -p "$dir/items/$sid"
+        find "$dir/items/$sid" -name '*.json' -exec jq -c '{title: .template.title}' {} + 2>/dev/null \
+            | jq -s '{items: .}' ;;
+    "item create")
+        kind="$3"; sid="$(opt share-id "$@")"
+        mkdir -p "$dir/items/$sid"
+        n="$(find "$dir/items/$sid" -name '*.json' | wc -l)"
+        if [[ "$kind" == ssh-key ]]; then
+            jq -n --arg t "$(opt title "$@")" --rawfile k "$(opt from-private-key "$@")" \
+                '{kind: "ssh-key", template: {title: $t}, private_key: $k}' >"$dir/items/$sid/$n.json"
+        else
+            jq --arg kind "$kind" '{kind: $kind, template: .}' >"$dir/items/$sid/$n.json"
+        fi
+        echo "item-$n" ;;
+    *)
+        echo "mock pass-cli: unsupported: $*" >&2; exit 2 ;;
+esac

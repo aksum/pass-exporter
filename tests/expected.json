@@ -1,0 +1,571 @@
+{
+  "entries": [
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "path.api-credential"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [
+        {
+          "name": "secret",
+          "sensitive": true,
+          "value": "fake-aws-secret"
+        },
+        {
+          "name": "region",
+          "sensitive": false,
+          "value": "eu-west-1"
+        }
+      ],
+      "id": "9528479da847",
+      "note": "Imported from pass: AWS/123/keys",
+      "password": "AKIAABCDEFGHIJKLMNOP",
+      "skip": false,
+      "source_path": "AWS/123/keys",
+      "tags": [
+        "pass-import",
+        "AWS",
+        "123"
+      ],
+      "title": "aws_123_keys",
+      "totp": "",
+      "type": "api_key",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "path.recovery-code"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "25a5237eef85",
+      "note": "1111-2222\n3333-4444\n\nImported from pass: Bank/alice/recovery-code",
+      "password": "",
+      "skip": false,
+      "source_path": "Bank/alice/recovery-code",
+      "tags": [
+        "pass-import",
+        "Bank",
+        "alice"
+      ],
+      "title": "bank_alice_recovery-code",
+      "totp": "",
+      "type": "note",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "low",
+        "review": true,
+        "rule": "binary"
+      },
+      "email": "",
+      "encoding": "base64",
+      "fields": [],
+      "id": "f40ffa52559f",
+      "note": "YmluAP/+\n\nImported from pass: Blobs/binary",
+      "password": "",
+      "skip": false,
+      "source_path": "Blobs/binary",
+      "tags": [
+        "pass-import",
+        "Blobs"
+      ],
+      "title": "blobs_binary",
+      "totp": "",
+      "type": "note",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "path.api-credential"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "a3fd9f19f6bf",
+      "note": "Imported from pass: CI/Token/deploy",
+      "password": "ghp_FAKETOKEN",
+      "skip": false,
+      "source_path": "CI/Token/deploy",
+      "tags": [
+        "pass-import",
+        "CI",
+        "Token"
+      ],
+      "title": "ci_token_deploy",
+      "totp": "",
+      "type": "api_key",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "pem.other"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "43d637474291",
+      "note": "-----BEGIN RSA PRIVATE KEY-----\nFAKEFAKEFAKEFAKE\n-----END RSA PRIVATE KEY-----\n\nImported from pass: Certs/example.com/key",
+      "password": "",
+      "skip": false,
+      "source_path": "Certs/example.com/key",
+      "tags": [
+        "pass-import",
+        "Certs",
+        "example.com"
+      ],
+      "title": "certs_example.com_key",
+      "totp": "",
+      "type": "note",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "medium",
+        "review": true,
+        "rule": "seed-phrase"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [
+        {
+          "name": "recovery_phrase",
+          "sensitive": true,
+          "value": "alpha beta: gamma delta\nepsilon zeta"
+        }
+      ],
+      "id": "32c4f7834903",
+      "note": "Imported from pass: Coins/mnemonic",
+      "password": "",
+      "skip": false,
+      "source_path": "Coins/mnemonic",
+      "tags": [
+        "pass-import",
+        "Coins"
+      ],
+      "title": "coins_mnemonic",
+      "totp": "",
+      "type": "crypto_wallet",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "medium",
+        "review": true,
+        "rule": "path.secret-name"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "d5f4254cc04c",
+      "note": "Imported from pass: Exchange/alice@example.com/key",
+      "password": "FAKE-SECRET-KEY-A3",
+      "skip": false,
+      "source_path": "Exchange/alice@example.com/key",
+      "tags": [
+        "pass-import",
+        "Exchange",
+        "alice@example.com"
+      ],
+      "title": "exchange_alice@example.com_key",
+      "totp": "",
+      "type": "password",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "medium",
+        "review": true,
+        "rule": "seed-phrase"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [
+        {
+          "name": "recovery_phrase",
+          "sensitive": true,
+          "value": "abandon ability able about above absent absorb abstract absurd abuse access accident"
+        }
+      ],
+      "id": "1f82adf4e78c",
+      "note": "Imported from pass: Exchange/seed",
+      "password": "",
+      "skip": false,
+      "source_path": "Exchange/seed",
+      "tags": [
+        "pass-import",
+        "Exchange"
+      ],
+      "title": "exchange_seed",
+      "totp": "",
+      "type": "crypto_wallet",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "medium",
+        "review": false,
+        "rule": "login.basename-user"
+      },
+      "email": "alice@example.com",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "256efe6a53a0",
+      "note": "Imported from pass: Games/alice@example.com/gamer1",
+      "password": "fake-gamer-pw",
+      "skip": false,
+      "source_path": "Games/alice@example.com/gamer1",
+      "tags": [
+        "pass-import",
+        "Games",
+        "alice@example.com"
+      ],
+      "title": "games_alice@example.com_gamer1",
+      "totp": "",
+      "type": "login",
+      "urls": [],
+      "username": "gamer1"
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "login.user-folder"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [
+        {
+          "name": "recovery",
+          "sensitive": true,
+          "value": "abcd-efgh"
+        }
+      ],
+      "id": "73a9d61611d0",
+      "note": "Imported from pass: Github/User/octocat",
+      "password": "gh-fake-Pa55",
+      "skip": false,
+      "source_path": "Github/User/octocat",
+      "tags": [
+        "pass-import",
+        "Github",
+        "User"
+      ],
+      "title": "github_user_octocat",
+      "totp": "otpauth://totp/GitHub:octocat?secret=JBSWY3DPEHPK3PXP",
+      "type": "login",
+      "urls": [
+        "https://github.com"
+      ],
+      "username": "octocat"
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "path.ssid"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [
+        {
+          "name": "ssid",
+          "sensitive": false,
+          "value": "mynet"
+        }
+      ],
+      "id": "2508f0705061",
+      "note": "Imported from pass: Home/SSID/mynet",
+      "password": "fake-wifi-pw",
+      "skip": false,
+      "source_path": "Home/SSID/mynet",
+      "tags": [
+        "pass-import",
+        "Home",
+        "SSID"
+      ],
+      "title": "home_ssid_mynet",
+      "totp": "",
+      "type": "wifi",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "low",
+        "review": true,
+        "rule": "unstructured"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "13cfe832228d",
+      "note": "line one\nline two\nline three\nline four\n\nImported from pass: Misc/free form @@ notes",
+      "password": "",
+      "skip": false,
+      "source_path": "Misc/free form @@ notes",
+      "tags": [
+        "pass-import",
+        "Misc"
+      ],
+      "title": "misc_free_form_@@_notes",
+      "totp": "",
+      "type": "note",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "low",
+        "review": true,
+        "rule": "single-secret"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "04bc2fdd9e9e",
+      "note": "Imported from pass: Misc/my pin",
+      "password": "fake-pin",
+      "skip": false,
+      "source_path": "Misc/my pin",
+      "tags": [
+        "pass-import",
+        "Misc"
+      ],
+      "title": "misc_my_pin",
+      "totp": "",
+      "type": "password",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "path.crypto-top"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "59a14afc7e76",
+      "note": "Imported from pass: Monero/main",
+      "password": "fake-monero-pw",
+      "skip": false,
+      "source_path": "Monero/main",
+      "tags": [
+        "pass-import",
+        "Monero"
+      ],
+      "title": "monero_main",
+      "totp": "",
+      "type": "crypto_wallet",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "login.user-folder"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "f6492a94f086",
+      "note": "Imported from pass: NAS/User/admin",
+      "password": "fake-admin-pw",
+      "skip": false,
+      "source_path": "NAS/User/admin",
+      "tags": [
+        "pass-import",
+        "NAS",
+        "User"
+      ],
+      "title": "nas_user_admin",
+      "totp": "",
+      "type": "login",
+      "urls": [],
+      "username": "admin"
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "login.user-folder"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "5264426287d4",
+      "note": "Imported from pass: NAS/User/restic",
+      "password": "fake-restic-user-pw",
+      "skip": false,
+      "source_path": "NAS/User/restic",
+      "tags": [
+        "pass-import",
+        "NAS",
+        "User"
+      ],
+      "title": "nas_user_restic",
+      "totp": "",
+      "type": "login",
+      "urls": [],
+      "username": "restic"
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "login.parent-user"
+      },
+      "email": "alice@example.com",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "3ccc3f13f06c",
+      "note": "Imported from pass: Proton/alice@example.com/psw",
+      "password": "fake-proton-pw",
+      "skip": false,
+      "source_path": "Proton/alice@example.com/psw",
+      "tags": [
+        "pass-import",
+        "Proton",
+        "alice@example.com"
+      ],
+      "title": "proton_alice@example.com_psw",
+      "totp": "",
+      "type": "login",
+      "urls": [],
+      "username": "alice@example.com"
+    },
+    {
+      "classification": {
+        "confidence": "medium",
+        "review": true,
+        "rule": "path.encryption-secret"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "e6b7c678d6b5",
+      "note": "Imported from pass: Restic/repo/nas",
+      "password": "fake-restic-pw",
+      "skip": false,
+      "source_path": "Restic/repo/nas",
+      "tags": [
+        "pass-import",
+        "Restic",
+        "repo"
+      ],
+      "title": "restic_repo_nas",
+      "totp": "",
+      "type": "password",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "pem.openssh-private-key"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [
+        {
+          "name": "private_key",
+          "sensitive": true,
+          "value": "-----BEGIN OPENSSH PRIVATE KEY-----\nFAKEOPENSSHKEY\n-----END OPENSSH PRIVATE KEY-----"
+        }
+      ],
+      "id": "9c6a6bd37b2d",
+      "note": "Imported from pass: Servers/ssh/id_ed25519",
+      "password": "",
+      "skip": false,
+      "source_path": "Servers/ssh/id_ed25519",
+      "tags": [
+        "pass-import",
+        "Servers",
+        "ssh"
+      ],
+      "title": "servers_ssh_id_ed25519",
+      "totp": "",
+      "type": "ssh_key",
+      "urls": [],
+      "username": ""
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "login.fields"
+      },
+      "email": "",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "afac91447645",
+      "note": "some free text\n\nImported from pass: Service/bob-first-line-kv",
+      "password": "fake-pw123",
+      "skip": false,
+      "source_path": "Service/bob-first-line-kv",
+      "tags": [
+        "pass-import",
+        "Service"
+      ],
+      "title": "service_bob-first-line-kv",
+      "totp": "",
+      "type": "login",
+      "urls": [
+        "https://example.com",
+        "https://login.example.com"
+      ],
+      "username": "bob"
+    },
+    {
+      "classification": {
+        "confidence": "high",
+        "review": false,
+        "rule": "login.basename-email"
+      },
+      "email": "alice@example.com",
+      "encoding": "utf8",
+      "fields": [],
+      "id": "0a25bdfe738b",
+      "note": "Imported from pass: Shop/alice@example.com",
+      "password": "fake-hunter2",
+      "skip": false,
+      "source_path": "Shop/alice@example.com",
+      "tags": [
+        "pass-import",
+        "Shop"
+      ],
+      "title": "shop_alice@example.com",
+      "totp": "",
+      "type": "login",
+      "urls": [],
+      "username": "alice@example.com"
+    }
+  ],
+  "format": "pass-exporter/v1",
+  "source": {
+    "count": 21
+  }
+}
