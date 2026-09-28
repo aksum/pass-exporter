@@ -115,22 +115,22 @@ check "validate rejects bad edits" bash -c "! '$EXPORTER' validate -o '$WORK/bad
 # --- import: proton backend against a mock pass-cli ---------------------------
 export PROTON_CLI="$TESTS_DIR/mock-pass-cli" MOCK_PASS_DIR="$WORK/mock"
 "$EXPORTER" export -s "$STORE" -o "$OUT" --force -q 2>/dev/null
-mock_items() { jq -s '.' "$MOCK_PASS_DIR"/items/*/*.json; }
+mock_items() { cat "$MOCK_PASS_DIR"/items/*/*.json 2>/dev/null | jq -s "."; }
 
 for v in Personal personal ' PERSONAL ' ''; do
     check "import refuses vault '$v'" bash -c "! '$EXPORTER' import -b proton -o '$OUT' --vault '$v' --apply --yes >/dev/null 2>&1"
 done
 check "refused vaults never reach pass-cli" test ! -e "$MOCK_PASS_DIR/argv.log"
 
-"$EXPORTER" import -b proton -o "$OUT" >"$WORK/imp-dry.out" 2>"$WORK/imp-dry.err"
-check "import dry run creates nothing" test ! -d "$MOCK_PASS_DIR/items/sid-pass-exporter"
+"$EXPORTER" import -b proton -o "$OUT" >"$WORK/imp-dry.out" 2>"$WORK/imp-dry.err" || true
+check "import dry run creates nothing" test ! -d "$MOCK_PASS_DIR/items/-sid-pass-exporter"
 check "import dry run plans 21 creates" grep -q "plan for vault 'pass-exporter': create=21 exists=0" "$WORK/imp-dry.err"
 check "import dry run output is secret free" no_secrets_in "$WORK/imp-dry.out"
 
 check "import --apply without --yes refuses when not interactive" \
     bash -c "! '$EXPORTER' import -b proton -o '$OUT' --apply </dev/null >/dev/null 2>&1"
 
-"$EXPORTER" import -b proton -o "$OUT" --apply --yes -v >"$WORK/imp.out" 2>"$WORK/imp.err"
+"$EXPORTER" import -b proton -o "$OUT" --apply --yes -v >"$WORK/imp.out" 2>"$WORK/imp.err" || true
 check "import creates the default vault 'pass-exporter'" \
     test "$(jq -r '[.vaults[].name] | join(",")' "$MOCK_PASS_DIR/vaults.json")" = pass-exporter
 check "import creates 21 items + 2 companions" test "$(mock_items | jq length)" -eq 23
@@ -146,7 +146,7 @@ check "wifi gets ssid from path" test "$(mock_items | jq -r '.[] | select(.kind 
 check "ssh key imported from private key file" test "$(mock_items | jq -r '.[] | select(.kind == "ssh-key") | .private_key | startswith("-----BEGIN OPENSSH")')" = true
 check "import leaves no temp files" test "$(shm_count)" -eq "$SHM_BEFORE"
 
-"$EXPORTER" import -b proton -o "$OUT" --apply --yes 2>"$WORK/imp2.err" >/dev/null
+"$EXPORTER" import -b proton -o "$OUT" --apply --yes 2>"$WORK/imp2.err" >/dev/null || true
 check "re-import skips existing titles" grep -q "plan for vault 'pass-exporter': create=0 exists=21" "$WORK/imp2.err"
 check "re-import creates nothing new" test "$(mock_items | jq length)" -eq 23
 # Defence in depth: the name resolves to a share id that belongs to "Personal".

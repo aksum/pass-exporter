@@ -21,7 +21,7 @@ $EDITOR export/pass-export.json       # review / fix types, titles, fields; set 
 shred -u export/pass-export.json      # when the import is done
 ```
 
-Options: `-s STORE` (default `./.password-store.bak`), `-o FILE`,
+Options: `-s STORE` (default `$PASSWORD_STORE_DIR`, else `~/.password-store`), `-o FILE`,
 `--filter 'Azure/*'`, `--include-raw`, `--keep-going`, `-f/--force`,
 `-v/--verbose`, `-q/--quiet`. The `LOG_LEVEL` env var (`error|warn|info|debug`)
 and `NO_COLOR` are also honoured.

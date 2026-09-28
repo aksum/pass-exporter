@@ -6,6 +6,9 @@
 
 PROTON_CLI="${PROTON_CLI:-pass-cli}"
 
+# Always pass option values as --option=VALUE: Proton share ids can start
+# with "-" (e.g. "-Yab…"), which pass-cli would otherwise parse as a flag.
+
 backend_check_deps() {
     require_cmds "$PROTON_CLI" jq
 }
@@ -34,7 +37,7 @@ backend_find_vault() {
 # backend_create_vault NAME -> prints the new vault's share id.
 backend_create_vault() {
     assert_vault_allowed "$1"
-    "$PROTON_CLI" vault create --name "$1" >/dev/null
+    "$PROTON_CLI" vault create --name="$1" >/dev/null
     backend_find_vault "$1"
 }
 
@@ -53,7 +56,7 @@ _proton_assert_sid_allowed() {
 
 # backend_list_titles SHARE_ID -> titles of active items, one per line.
 backend_list_titles() {
-    "$PROTON_CLI" item list --share-id "$1" --filter-state active --output json \
+    "$PROTON_CLI" item list --share-id="$1" --filter-state active --output json \
         | jq -r '.items[].title'
 }
 
@@ -68,7 +71,7 @@ backend_import_entry() {
     case "$kind" in
         login|note|custom|wifi|credit-card|identity)
             out="$(jq '.template' "$payload" \
-                | "$PROTON_CLI" item create "$kind" --share-id "$sid" --from-template - 2>&1)" \
+                | "$PROTON_CLI" item create "$kind" --share-id="$sid" --from-template - 2>&1)" \
                 || { log_error "pass-cli: $out"; return 1; }
             ;;
         ssh-key)
@@ -77,8 +80,8 @@ backend_import_entry() {
             chmod 600 "$keyfile"
             jq -j '.private_key' "$payload" >"$keyfile"
             printf '\n' >>"$keyfile"
-            out="$("$PROTON_CLI" item create ssh-key import --share-id "$sid" \
-                --from-private-key "$keyfile" --title "$title" 2>&1)" \
+            out="$("$PROTON_CLI" item create ssh-key import --share-id="$sid" \
+                --from-private-key="$keyfile" --title="$title" 2>&1)" \
                 || { secure_rm "$keyfile"; log_error "pass-cli: $out"; return 1; }
             secure_rm "$keyfile"
             ;;
@@ -99,7 +102,7 @@ _proton_create_companion() {
     local sid="$1" payload="$2" title out
     title="$(jq -r '.companion.template.title' "$payload")"
     out="$(jq '.companion.template' "$payload" \
-        | "$PROTON_CLI" item create custom --share-id "$sid" --from-template - 2>&1)" || {
+        | "$PROTON_CLI" item create custom --share-id="$sid" --from-template - 2>&1)" || {
         log_error "pass-cli (companion '$title'): $out"
         return 1
     }

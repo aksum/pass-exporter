@@ -23,7 +23,7 @@ source "$LIB_DIR/store.sh"
 source "$LIB_DIR/import.sh"
 
 # Defaults (overridable by flags).
-STORE="./.password-store.bak"
+STORE="${PASSWORD_STORE_DIR:-$HOME/.password-store}"  # same default as pass(1)
 OUTPUT="./export/pass-export.json"
 VAULT=""  # import target vault; lib/import.sh defaults it to "pass-exporter"
 BACKEND=""

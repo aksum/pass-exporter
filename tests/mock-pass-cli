@@ -8,9 +8,21 @@ mkdir -p "$dir/items"
 [[ -f "$dir/vaults.json" ]] || echo '{"vaults":[]}' >"$dir/vaults.json"
 printf '%s\n' "$*" >>"$dir/argv.log"
 
-opt() { # opt NAME ARGS... -> value following --NAME
+# Like pass-cli (clap): accepts --NAME=VALUE or --NAME VALUE, but a separate
+# VALUE that starts with "-" is rejected as an unexpected argument.
+opt() { # opt NAME ARGS... -> value of --NAME
     local name="$1"; shift
-    while (( $# > 1 )); do [[ "$1" == "--$name" ]] && { printf '%s' "$2"; return; }; shift; done
+    while (( $# > 0 )); do
+        case "$1" in
+            "--$name="*) printf '%s' "${1#--"$name"=}"; return ;;
+            "--$name")
+                if [[ "${2:-}" == -* ]]; then
+                    echo "error: unexpected argument '${2:0:2}' found" >&2; exit 2
+                fi
+                printf '%s' "${2:-}"; return ;;
+        esac
+        shift
+    done
 }
 
 case "$1 ${2:-}" in
@@ -20,9 +32,9 @@ case "$1 ${2:-}" in
         cat "$dir/vaults.json" ;;
     "vault create")
         name="$(opt name "$@")"
-        jq --arg n "$name" '.vaults += [{name: $n, vault_id: "vid-\($n)", share_id: "sid-\($n)"}]' \
+        jq --arg n "$name" '.vaults += [{name: $n, vault_id: "vid-\($n)", share_id: "-sid-\($n)"}]' \
             "$dir/vaults.json" >"$dir/v.tmp" && mv "$dir/v.tmp" "$dir/vaults.json"
-        echo "sid-$name" ;;
+        echo "-sid-$name" ;;
     "item list")
         sid="$(opt share-id "$@")"
         mkdir -p "$dir/items/$sid"

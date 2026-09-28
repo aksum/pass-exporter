@@ -58,7 +58,12 @@ _import_with_retry() {
         (( attempt >= 3 )) && return 1
         log_warn "attempt $attempt failed, retrying in ${delay}s"
         sleep "$delay"
-        if backend_list_titles "$sid" | grep -qxF -- "$title"; then
+        local existing
+        if ! existing="$(backend_list_titles "$sid")"; then
+            log_error "cannot list the vault to check for '$title'; not retrying (to avoid duplicates)"
+            return 1
+        fi
+        if grep -qxF -- "$title" <<<"$existing"; then
             log_error "'$title' was created but the import reported an error; check it (and any companion item) in the vault"
             return 1
         fi
@@ -104,7 +109,7 @@ cmd_import() {
     local sid titles="$IMPORT_TMP/titles"
     sid="$(backend_find_vault "$VAULT")"
     if [[ -n "$sid" ]]; then
-        backend_list_titles "$sid" >"$titles"
+        backend_list_titles "$sid" >"$titles" || die "could not list items in vault '$VAULT'"
         log_info "target vault '$VAULT' exists ($(wc -l <"$titles") items)"
     else
         : >"$titles"
@@ -147,6 +152,9 @@ cmd_import() {
         log_info "created vault '$VAULT'"
     fi
 
+    # Stop after this many failures in a row: the cause is almost certainly
+    # systematic (auth, CLI change, network) and retrying 100 entries won't help.
+    local max_consecutive=3 n_consecutive=0
     local payload="$IMPORT_TMP/payload.json" n_ok=0 n_fail=0
     while IFS=$'\t' read -r i path type kind title note action; do
         [[ "$action" == create ]] || continue
@@ -155,14 +163,17 @@ cmd_import() {
         jq -L "$SCRIPT_DIR/backends" --argjson i "$i" \
             "include \"$BACKEND\"; .entries[\$i] | backend_payload" "$OUTPUT" >"$payload"
         if _import_with_retry "$sid" "$payload" "$title"; then
-            n_ok=$((n_ok + 1))
+            n_ok=$((n_ok + 1)); n_consecutive=0
             printf '%s\n' "$title" >>"$titles"
             log_info "created $kind '$title' ($path)"
         else
-            n_fail=$((n_fail + 1))
+            n_fail=$((n_fail + 1)); n_consecutive=$((n_consecutive + 1))
             log_error "failed to import $path"
         fi
         secure_rm "$payload"
+        if (( n_consecutive >= max_consecutive )); then
+            die "$n_consecutive imports failed in a row; stopping (created=$n_ok). Fix the error above and re-run; existing titles are skipped"
+        fi
         [[ "$DELAY" == 0 ]] || sleep "$DELAY"
     done <"$decided"
 
